@@ -10,23 +10,48 @@
         @toggle-complete="toggleTodoComplete"
         @edit-todo="toggleEditTodo"
         @update-todo="updateTodo"
+        @delete-todo="deleteTodo"
       />
     </ul>
     <p class="todos-msg" v-if="todoList.length < 1">
       <Icon icon="noto-v1:sad-but-relieved-face" />
       There are no todos
     </p>
+    <p class="todos-msg" v-if="todoCompleted && todoList.length > 0">You did all the todos!</p>
   </main>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch, computed } from "vue";
 import { uid } from "uid";
 import { Icon } from "@iconify/vue";
 import TodoCreator from "../components/TodoCreator.vue";
 import TodoItem from "../components/TodoItem.vue";
 
 const todoList = ref([]);
+
+watch(todoList, () => {
+  setTodoListLocalStorage();
+}, {
+  deep: true,
+})
+
+const todoCompleted = computed(() => {
+  return todoList.value.every((todo) => todo.isCompleted);
+})
+
+const fetchTodoListLocalStorage = () => {
+  const savedTodoList = JSON.parse(localStorage.getItem("todoList"))
+  if (savedTodoList) {
+    todoList.value = savedTodoList;
+  }
+}
+
+fetchTodoListLocalStorage();
+
+const setTodoListLocalStorage = () => {
+  localStorage.setItem("todoList", JSON.stringify(todoList.value))
+}
 
 const createTodo = (todo) => {
   todoList.value.push({
@@ -35,6 +60,7 @@ const createTodo = (todo) => {
     isCompleted: null,
     isEditing: false,
   });
+  setTodoListLocalStorage();
 };
 
 const toggleTodoComplete = (todoPosition) => {
@@ -47,6 +73,10 @@ const toggleEditTodo = (todoPosition) => {
 
 const updateTodo = (todoValue, todoPostion) => {
   todoList.value[todoPostion].todo = todoValue;
+}
+
+const deleteTodo = (todoId) => {
+  todoList.value = todoList.value.filter((todo) => todo.id !== todoId)
 }
 </script>
 
